@@ -32,7 +32,7 @@
 				SplashView.swift,
 				StandingsView.swift,
 				StatisticsView.swift,
-				TeamProfileView.swift.swift,
+				TeamProfileView.swift,
 				TournamentSelectionView.swift,
 			);
 			target = 5EED717E2FD6C3B300584469 /* WorldCup2026TrackerIOS */;
