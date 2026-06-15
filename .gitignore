@@ -1,0 +1,22 @@
+# Xcode user files
+xcuserdata/
+
+# Breakpoints
+*.xcbkptlist
+
+# macOS
+.DS_Store
+
+# SwiftPM
+.build/
+
+# Xcode build products
+DerivedData/
+build/
+
+# Swift Package Manager
+.swiftpm/
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
