@@ -5,6 +5,7 @@ struct RemoteMatchesView: View {
     @Binding private var localMatches: [Match]
     @State private var matches: [RemoteMatch] = []
     @State private var searchText = ""
+    @State private var autoRefreshTask: Task<Void, Never>?
 
     init(localMatches: Binding<[Match]> = .constant([])) {
         self._localMatches = localMatches
@@ -63,6 +64,10 @@ struct RemoteMatchesView: View {
         .navigationTitle("Live Match Data")
         .task {
             await loadMatches()
+            startAutoRefresh()
+        }
+        .onDisappear {
+            stopAutoRefresh()
         }
     }
 
@@ -440,6 +445,23 @@ struct RemoteMatchesView: View {
             .replacingOccurrences(of: "'", with: "")
             .replacingOccurrences(of: "’", with: "")
     }
+    
+    private func startAutoRefresh() {
+        stopAutoRefresh()
+
+        autoRefreshTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 60_000_000_000)
+                await loadMatches()
+            }
+        }
+    }
+
+    private func stopAutoRefresh() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
+    }
+    
 }
 
 #Preview {
