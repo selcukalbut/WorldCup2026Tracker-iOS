@@ -7,19 +7,63 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		5E8946962FD057B80003AADF /* WorldCup2026Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorldCup2026Tracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E0906762FD165200052C75B /* WorldCup2026Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorldCup2026Tracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5EED717F2FD6C3B300584469 /* WorldCup2026TrackerIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorldCup2026TrackerIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5E0373B42FDF3C99006C6D53 /* Exceptions for "WorldCup2026Tracker" folder in "WorldCup2026TrackerIOS" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				APIService.swift,
+				ContentView.swift,
+				GroupsView.swift,
+				HostCitiesView.swift,
+				KnockoutView.swift,
+				MainTabView.swift,
+				MatchCenterView.swift,
+				MatchesView.swift,
+				MobileDashboardView.swift,
+				Models.swift,
+				MoreView.swift,
+				NotificationManager.swift,
+				RemoteMatchesView.swift,
+				SampleData.swift,
+				SplashView.swift,
+				StandingsView.swift,
+				StatisticsView.swift,
+				TeamProfileView.swift.swift,
+				TournamentSelectionView.swift,
+			);
+			target = 5EED717E2FD6C3B300584469 /* WorldCup2026TrackerIOS */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5E8946982FD057B80003AADF /* WorldCup2026Tracker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5E0373B42FDF3C99006C6D53 /* Exceptions for "WorldCup2026Tracker" folder in "WorldCup2026TrackerIOS" target */,
+			);
 			path = WorldCup2026Tracker;
+			sourceTree = "<group>";
+		};
+		5EED71802FD6C3B300584469 /* WorldCup2026TrackerIOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WorldCup2026TrackerIOS;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		5E8946932FD057B80003AADF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5EED717C2FD6C3B300584469 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,16 +77,10 @@
 			isa = PBXGroup;
 			children = (
 				5E8946982FD057B80003AADF /* WorldCup2026Tracker */,
-				5E8946972FD057B80003AADF /* Products */,
+				5E0906762FD165200052C75B /* WorldCup2026Tracker.app */,
+				5EED717F2FD6C3B300584469 /* WorldCup2026TrackerIOS.app */,
+				5EED71802FD6C3B300584469 /* WorldCup2026TrackerIOS */,
 			);
-			sourceTree = "<group>";
-		};
-		5E8946972FD057B80003AADF /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				5E8946962FD057B80003AADF /* WorldCup2026Tracker.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -67,7 +105,29 @@
 			packageProductDependencies = (
 			);
 			productName = WorldCup2026Tracker;
-			productReference = 5E8946962FD057B80003AADF /* WorldCup2026Tracker.app */;
+			productReference = 5E0906762FD165200052C75B /* WorldCup2026Tracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5EED717E2FD6C3B300584469 /* WorldCup2026TrackerIOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5EED71872FD6C3B400584469 /* Build configuration list for PBXNativeTarget "WorldCup2026TrackerIOS" */;
+			buildPhases = (
+				5EED717B2FD6C3B300584469 /* Sources */,
+				5EED717C2FD6C3B300584469 /* Frameworks */,
+				5EED717D2FD6C3B300584469 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5EED71802FD6C3B300584469 /* WorldCup2026TrackerIOS */,
+			);
+			name = WorldCup2026TrackerIOS;
+			packageProductDependencies = (
+			);
+			productName = WorldCup2026TrackerIOS;
+			productReference = 5EED717F2FD6C3B300584469 /* WorldCup2026TrackerIOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -83,6 +143,9 @@
 					5E8946952FD057B80003AADF = {
 						CreatedOnToolsVersion = 26.5;
 					};
+					5EED717E2FD6C3B300584469 = {
+						CreatedOnToolsVersion = 26.5;
+					};
 				};
 			};
 			buildConfigurationList = 5E8946912FD057B80003AADF /* Build configuration list for PBXProject "WorldCup2026Tracker" */;
@@ -95,11 +158,12 @@
 			mainGroup = 5E89468D2FD057B80003AADF;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 5E8946972FD057B80003AADF /* Products */;
+			productRefGroup = 5E89468D2FD057B80003AADF;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				5E8946952FD057B80003AADF /* WorldCup2026Tracker */,
+				5EED717E2FD6C3B300584469 /* WorldCup2026TrackerIOS */,
 			);
 		};
 /* End PBXProject section */
@@ -112,10 +176,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5EED717D2FD6C3B300584469 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5E8946922FD057B80003AADF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5EED717B2FD6C3B300584469 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -256,9 +334,21 @@
 				DEVELOPMENT_TEAM = PME5H75J6C;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = GlobalSportsTracker;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -288,9 +378,21 @@
 				DEVELOPMENT_TEAM = PME5H75J6C;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = GlobalSportsTracker;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -306,6 +408,77 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		5EED71882FD6C3B400584469 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = PME5H75J6C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.selcukalbut.worldcup2026tracker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5EED71892FD6C3B400584469 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = PME5H75J6C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.selcukalbut.worldcup2026tracker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -326,6 +499,15 @@
 			buildConfigurations = (
 				5E8946A22FD057BC0003AADF /* Debug */,
 				5E8946A32FD057BC0003AADF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5EED71872FD6C3B400584469 /* Build configuration list for PBXNativeTarget "WorldCup2026TrackerIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5EED71882FD6C3B400584469 /* Debug */,
+				5EED71892FD6C3B400584469 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,6 +1,6 @@
 //
-//  WorldCup2026TrackerIOSApp.swift
-//  WorldCup2026TrackerIOS
+//  GlobalSportsTrackerIOSApp.swift
+//  GlobalSportsTrackerIOS
 //
 //  Created by Selcuk Albut on 8.06.2026.
 //
@@ -11,7 +11,10 @@ import SwiftUI
 struct WorldCup2026TrackerIOSApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashView()
+                .task {
+                    _ = await NotificationManager.shared.requestPermission()
+                }
         }
     }
 }
