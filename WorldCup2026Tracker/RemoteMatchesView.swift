@@ -441,7 +441,12 @@ struct RemoteMatchesView: View {
             "czechia": "czechia",
             "ivorycoast": "cotedivoire",
             "cotedivoire": "cotedivoire",
-            "curacao": "curacao"
+            "curacao": "curacao",
+            "capeverdeislands": "capeverde",
+            "capeverde": "capeverde",
+            "congodr": "drcongo",
+            "drcongo": "drcongo",
+            "democraticrepublicofthecongo": "drcongo"
         ]
 
         return aliases[normalizedName] ?? normalizedName

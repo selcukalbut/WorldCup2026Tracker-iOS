@@ -11,6 +11,7 @@ struct KnockoutView: View {
     @State private var finalMatches: [KnockoutMatch] = []
     @AppStorage("savedKnockoutMatches") private var savedKnockoutData: Data = Data()
     @State private var selectedMobileRound: KnockoutRound = .roundOf32
+    @State private var isSimulatingKnockout = false
     
     private let matchCardHeight: CGFloat = 92
     private let baseMatchSpacing: CGFloat = 14
@@ -50,22 +51,27 @@ struct KnockoutView: View {
             loadKnockoutMatches()
         }
         .onChange(of: roundOf32Matches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             updateRoundOf16()
             saveKnockoutMatches()
         }
         .onChange(of: roundOf16Matches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             updateQuarterFinals()
             saveKnockoutMatches()
         }
         .onChange(of: quarterFinalMatches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             updateSemiFinals()
             saveKnockoutMatches()
         }
         .onChange(of: semiFinalMatches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             updateFinal()
             saveKnockoutMatches()
         }
         .onChange(of: finalMatches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             saveKnockoutMatches()
         }
     }
@@ -97,22 +103,27 @@ struct KnockoutView: View {
             loadKnockoutMatches()
         }
         .onChange(of: roundOf32Matches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             updateRoundOf16()
             saveKnockoutMatches()
         }
         .onChange(of: roundOf16Matches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             updateQuarterFinals()
             saveKnockoutMatches()
         }
         .onChange(of: quarterFinalMatches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             updateSemiFinals()
             saveKnockoutMatches()
         }
         .onChange(of: semiFinalMatches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             updateFinal()
             saveKnockoutMatches()
         }
         .onChange(of: finalMatches) { _, _ in
+            guard !isSimulatingKnockout else { return }
             saveKnockoutMatches()
         }
     }
@@ -726,18 +737,62 @@ struct KnockoutView: View {
     }
     
     private func updateRoundOf16() {
-        let winners = roundOf32Matches.compactMap { $0.winner }
+        guard roundOf32Matches.count >= 16 else {
+            roundOf16Matches = []
+            return
+        }
+
+        let officialPairings = [
+            (0, 2),   // Winner Match 73 vs Winner Match 75
+            (1, 4),   // Winner Match 74 vs Winner Match 77
+            (3, 5),   // Winner Match 76 vs Winner Match 78
+            (6, 7),   // Winner Match 79 vs Winner Match 80
+            (10, 11), // Winner Match 83 vs Winner Match 84
+            (8, 9),   // Winner Match 81 vs Winner Match 82
+            (13, 15), // Winner Match 86 vs Winner Match 88
+            (12, 14)  // Winner Match 85 vs Winner Match 87
+        ]
+
+        let generatedMatches = officialPairings.compactMap { firstIndex, secondIndex -> KnockoutMatch? in
+            guard let firstWinner = roundOf32Matches[firstIndex].winner,
+                  let secondWinner = roundOf32Matches[secondIndex].winner else {
+                return nil
+            }
+
+            return KnockoutMatch(round: .roundOf16, homeTeam: firstWinner, awayTeam: secondWinner)
+        }
+
         roundOf16Matches = preserveScores(
             oldMatches: roundOf16Matches,
-            newMatches: createMatches(from: winners, round: .roundOf16)
+            newMatches: generatedMatches
         )
     }
     
     private func updateQuarterFinals() {
-        let winners = roundOf16Matches.compactMap { $0.winner }
+        guard roundOf16Matches.count >= 8 else {
+            quarterFinalMatches = []
+            return
+        }
+
+        let officialPairings = [
+            (0, 1), // Winner Match 89 vs Winner Match 90
+            (4, 5), // Winner Match 93 vs Winner Match 94
+            (2, 3), // Winner Match 91 vs Winner Match 92
+            (6, 7)  // Winner Match 95 vs Winner Match 96
+        ]
+
+        let generatedMatches = officialPairings.compactMap { firstIndex, secondIndex -> KnockoutMatch? in
+            guard let firstWinner = roundOf16Matches[firstIndex].winner,
+                  let secondWinner = roundOf16Matches[secondIndex].winner else {
+                return nil
+            }
+
+            return KnockoutMatch(round: .quarterFinal, homeTeam: firstWinner, awayTeam: secondWinner)
+        }
+
         quarterFinalMatches = preserveScores(
             oldMatches: quarterFinalMatches,
-            newMatches: createMatches(from: winners, round: .quarterFinal)
+            newMatches: generatedMatches
         )
     }
     
@@ -787,40 +842,75 @@ struct KnockoutView: View {
     }
     
     private func createRoundOf32Matches() -> [KnockoutMatch] {
-        let groupOrder = Array(Set(teams.map { $0.group })).sorted()
-        var groupWinners: [Team] = []
-        var groupRunnersUp: [Team] = []
-        var thirdPlacedTeams: [Standing] = []
-        
-        for group in groupOrder {
-            let standings = calculateStandings(for: group)
-            
-            if standings.count >= 3 {
-                groupWinners.append(standings[0].team)
-                groupRunnersUp.append(standings[1].team)
-                thirdPlacedTeams.append(standings[2])
+        let groupOrder = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]
+        let standingsByGroup = Dictionary(
+            uniqueKeysWithValues: groupOrder.map { group in
+                (group, calculateStandings(for: group))
             }
-        }
-        
-        let bestThirdPlacedTeams = thirdPlacedTeams
-            .sorted {
-                if $0.points != $1.points { return $0.points > $1.points }
-                if $0.goalDifference != $1.goalDifference { return $0.goalDifference > $1.goalDifference }
-                if $0.goalsFor != $1.goalsFor { return $0.goalsFor > $1.goalsFor }
-                return $0.team.name < $1.team.name
+        )
+
+        let thirdPlacedTeams = groupOrder.compactMap { group -> Standing? in
+            guard let standings = standingsByGroup[group], standings.indices.contains(2) else {
+                return nil
             }
-            .prefix(8)
-            .map { $0.team }
-        
-        let qualifiedTeams = groupWinners + groupRunnersUp + bestThirdPlacedTeams
-        var result: [KnockoutMatch] = []
-        
-        for index in stride(from: 0, to: qualifiedTeams.count, by: 2) {
-            guard index + 1 < qualifiedTeams.count else { continue }
-            result.append(KnockoutMatch(round: .roundOf32, homeTeam: qualifiedTeams[index], awayTeam: qualifiedTeams[index + 1]))
+            return standings[2]
         }
-        
-        return result
+
+        var availableThirdPlacedTeams = Array(
+            thirdPlacedTeams
+                .sorted {
+                    if $0.points != $1.points { return $0.points > $1.points }
+                    if $0.goalDifference != $1.goalDifference { return $0.goalDifference > $1.goalDifference }
+                    if $0.goalsFor != $1.goalsFor { return $0.goalsFor > $1.goalsFor }
+                    return $0.team.name < $1.team.name
+                }
+                .prefix(8)
+        )
+
+        func team(group: String, position: Int) -> Team? {
+            guard let standings = standingsByGroup[group], standings.indices.contains(position - 1) else {
+                return nil
+            }
+            return standings[position - 1].team
+        }
+
+        func takeBestThird(from eligibleGroups: [String]) -> Team? {
+            if let eligibleIndex = availableThirdPlacedTeams.firstIndex(where: { eligibleGroups.contains($0.team.group) }) {
+                return availableThirdPlacedTeams.remove(at: eligibleIndex).team
+            }
+
+            // Fallback for partial group-stage data in the simulator:
+            // If no remaining best-third team belongs to the official eligible pool,
+            // use the next best available third-placed team so the Round of 32 is always complete.
+            guard !availableThirdPlacedTeams.isEmpty else {
+                return nil
+            }
+
+            return availableThirdPlacedTeams.removeFirst().team
+        }
+
+        func makeMatch(homeTeam: Team?, awayTeam: Team?) -> KnockoutMatch {
+            KnockoutMatch(round: .roundOf32, homeTeam: homeTeam, awayTeam: awayTeam)
+        }
+
+        return [
+            makeMatch(homeTeam: team(group: "A", position: 2), awayTeam: team(group: "B", position: 2)),
+            makeMatch(homeTeam: team(group: "E", position: 1), awayTeam: takeBestThird(from: ["A", "B", "C", "D", "F"])),
+            makeMatch(homeTeam: team(group: "F", position: 1), awayTeam: team(group: "C", position: 2)),
+            makeMatch(homeTeam: team(group: "C", position: 1), awayTeam: team(group: "F", position: 2)),
+            makeMatch(homeTeam: team(group: "I", position: 1), awayTeam: takeBestThird(from: ["C", "D", "F", "G", "H"])),
+            makeMatch(homeTeam: team(group: "E", position: 2), awayTeam: team(group: "I", position: 2)),
+            makeMatch(homeTeam: team(group: "A", position: 1), awayTeam: takeBestThird(from: ["C", "E", "F", "H", "I"])),
+            makeMatch(homeTeam: team(group: "L", position: 1), awayTeam: takeBestThird(from: ["E", "H", "I", "J", "K"])),
+            makeMatch(homeTeam: team(group: "D", position: 1), awayTeam: takeBestThird(from: ["B", "E", "F", "I", "J"])),
+            makeMatch(homeTeam: team(group: "G", position: 1), awayTeam: takeBestThird(from: ["A", "E", "H", "I", "J"])),
+            makeMatch(homeTeam: team(group: "K", position: 2), awayTeam: team(group: "L", position: 2)),
+            makeMatch(homeTeam: team(group: "H", position: 1), awayTeam: team(group: "J", position: 2)),
+            makeMatch(homeTeam: team(group: "B", position: 1), awayTeam: takeBestThird(from: ["E", "F", "G", "I", "J"])),
+            makeMatch(homeTeam: team(group: "D", position: 2), awayTeam: team(group: "G", position: 2)),
+            makeMatch(homeTeam: team(group: "J", position: 1), awayTeam: team(group: "H", position: 2)),
+            makeMatch(homeTeam: team(group: "K", position: 1), awayTeam: takeBestThird(from: ["D", "E", "I", "J", "L"]))
+        ]
     }
     
     private func resetKnockoutTournament() {
@@ -834,19 +924,83 @@ struct KnockoutView: View {
     }
 
     private func simulateKnockoutTournament() {
-        if roundOf32Matches.isEmpty {
-            roundOf32Matches = createRoundOf32Matches()
+        isSimulatingKnockout = true
+
+        var simulatedRoundOf32 = roundOf32Matches.isEmpty ? createRoundOf32Matches() : roundOf32Matches
+        simulateMatches(&simulatedRoundOf32)
+
+        let roundOf16Pairings = [
+            (0, 2),
+            (1, 4),
+            (3, 5),
+            (6, 7),
+            (10, 11),
+            (8, 9),
+            (13, 15),
+            (12, 14)
+        ]
+
+        var simulatedRoundOf16 = roundOf16Pairings.compactMap { firstIndex, secondIndex -> KnockoutMatch? in
+            guard simulatedRoundOf32.indices.contains(firstIndex),
+                  simulatedRoundOf32.indices.contains(secondIndex),
+                  let firstWinner = simulatedRoundOf32[firstIndex].winner,
+                  let secondWinner = simulatedRoundOf32[secondIndex].winner else {
+                return nil
+            }
+
+            return KnockoutMatch(round: .roundOf16, homeTeam: firstWinner, awayTeam: secondWinner)
         }
-        
-        simulateMatches(&roundOf32Matches)
-        updateRoundOf16()
-        simulateMatches(&roundOf16Matches)
-        updateQuarterFinals()
-        simulateMatches(&quarterFinalMatches)
-        updateSemiFinals()
-        simulateMatches(&semiFinalMatches)
-        updateFinal()
-        simulateMatches(&finalMatches)
+        simulateMatches(&simulatedRoundOf16)
+
+        let quarterFinalPairings = [
+            (0, 1),
+            (4, 5),
+            (2, 3),
+            (6, 7)
+        ]
+
+        var simulatedQuarterFinals = quarterFinalPairings.compactMap { firstIndex, secondIndex -> KnockoutMatch? in
+            guard simulatedRoundOf16.indices.contains(firstIndex),
+                  simulatedRoundOf16.indices.contains(secondIndex),
+                  let firstWinner = simulatedRoundOf16[firstIndex].winner,
+                  let secondWinner = simulatedRoundOf16[secondIndex].winner else {
+                return nil
+            }
+
+            return KnockoutMatch(round: .quarterFinal, homeTeam: firstWinner, awayTeam: secondWinner)
+        }
+        simulateMatches(&simulatedQuarterFinals)
+
+        var simulatedSemiFinals = createMatches(
+            from: simulatedQuarterFinals.compactMap { $0.winner },
+            round: .semiFinal
+        )
+        simulateMatches(&simulatedSemiFinals)
+
+        var simulatedFinals = createMatches(
+            from: simulatedSemiFinals.compactMap { $0.winner },
+            round: .final
+        )
+        simulateMatches(&simulatedFinals)
+
+        print("========== Knockout Simulation Debug ==========")
+        print("Round of 32: \(simulatedRoundOf32.count) matches, winners: \(simulatedRoundOf32.compactMap { $0.winner }.count)")
+        print("Round of 16: \(simulatedRoundOf16.count) matches, winners: \(simulatedRoundOf16.compactMap { $0.winner }.count)")
+        print("Quarter-Finals: \(simulatedQuarterFinals.count) matches, winners: \(simulatedQuarterFinals.compactMap { $0.winner }.count)")
+        print("Semi-Finals: \(simulatedSemiFinals.count) matches, winners: \(simulatedSemiFinals.compactMap { $0.winner }.count)")
+        print("Finals: \(simulatedFinals.count) matches, winners: \(simulatedFinals.compactMap { $0.winner }.count)")
+        print("===============================================")
+
+        roundOf32Matches = simulatedRoundOf32
+        roundOf16Matches = simulatedRoundOf16
+        quarterFinalMatches = simulatedQuarterFinals
+        semiFinalMatches = simulatedSemiFinals
+        finalMatches = simulatedFinals
+        saveKnockoutMatches()
+
+        DispatchQueue.main.async {
+            isSimulatingKnockout = false
+        }
     }
     
     private func simulateMatches(_ matches: inout [KnockoutMatch]) {
