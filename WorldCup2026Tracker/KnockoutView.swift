@@ -80,10 +80,10 @@ struct KnockoutView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 mobileHeader
-                mobileRoundSelector
-                mobileSelectedRoundList
+                mobileBracketBoard
                 mobileChampionSection
             }
+            
             .padding()
         }
         .background(
@@ -408,6 +408,285 @@ struct KnockoutView: View {
         }
     }
     
+    // Bracket board for mobile
+    private var mobileBracketBoard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Official Tournament Bracket")
+                    .font(.title2)
+                    .fontWeight(.black)
+
+                Spacer()
+
+                Text("R32 → Final")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.blue.opacity(0.85))
+                    .clipShape(Capsule())
+            }
+
+            ScrollView(.horizontal, showsIndicators: true) {
+                HStack(alignment: .top, spacing: 10) {
+                    mobileBracketColumn(title: "ROUND OF 32", shortTitle: "R32", matches: roundOf32Matches, accent: .green, level: 0)
+                    mobileBracketConnector(fromCount: roundOf32Matches.count, toCount: roundOf16Matches.count, fromLevel: 0, color: .green)
+
+                    mobileBracketColumn(title: "ROUND OF 16", shortTitle: "R16", matches: roundOf16Matches, accent: .green, level: 1)
+                    mobileBracketConnector(fromCount: roundOf16Matches.count, toCount: quarterFinalMatches.count, fromLevel: 1, color: .red)
+
+                    mobileBracketColumn(title: "QUARTER-FINALS", shortTitle: "QF", matches: quarterFinalMatches, accent: .red, level: 2)
+                    mobileBracketConnector(fromCount: quarterFinalMatches.count, toCount: semiFinalMatches.count, fromLevel: 2, color: .orange)
+
+                    mobileBracketColumn(title: "SEMI-FINALS", shortTitle: "SF", matches: semiFinalMatches, accent: .orange, level: 3)
+                    mobileBracketConnector(fromCount: semiFinalMatches.count, toCount: finalMatches.count, fromLevel: 3, color: .yellow)
+                    mobileBracketFinalColumn
+                }
+                .padding(14)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.08, green: 0.20, blue: 0.38),
+                            Color(red: 0.12, green: 0.32, blue: 0.56),
+                            Color(red: 0.06, green: 0.18, blue: 0.34)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 22))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22)
+                        .stroke(Color.yellow.opacity(0.28), lineWidth: 1.2)
+                )
+            }
+        }
+    }
+
+    private func mobileBracketConnector(fromCount: Int, toCount: Int, fromLevel: Int, color: Color) -> some View {
+        let safeFromCount = max(fromCount, 1)
+        let safeToCount = max(toCount, 1)
+        let cardHeight: CGFloat = 96
+        let baseSpacing: CGFloat = 10
+        let fromSpacing = mobileBracketCardSpacing(level: fromLevel)
+        let connectorTopPadding = mobileBracketTopPadding(level: fromLevel)
+        let headerHeight: CGFloat = 32
+        let topGap: CGFloat = 10
+        let totalHeight = headerHeight + topGap + connectorTopPadding + CGFloat(safeFromCount) * cardHeight + CGFloat(max(safeFromCount - 1, 0)) * fromSpacing
+
+        return ZStack(alignment: .topLeading) {
+            ForEach(0..<safeToCount, id: \.self) { index in
+                mobileBracketConnectorPath(
+                    fromTopIndex: min(index * 2, safeFromCount - 1),
+                    fromBottomIndex: min(index * 2 + 1, safeFromCount - 1),
+                    toIndex: index,
+                    fromLevel: fromLevel,
+                    color: color
+                )
+            }
+        }
+        .frame(width: 38, height: totalHeight)
+    }
+
+    private func mobileBracketConnectorPath(
+        fromTopIndex: Int,
+        fromBottomIndex: Int,
+        toIndex: Int,
+        fromLevel: Int,
+        color: Color
+    ) -> some View {
+        let cardHeight: CGFloat = 96
+        let headerHeight: CGFloat = 32
+        let topGap: CGFloat = 10
+        let fromSpacing = mobileBracketCardSpacing(level: fromLevel)
+        let toSpacing = mobileBracketCardSpacing(level: fromLevel + 1)
+        let fromTopPadding = mobileBracketTopPadding(level: fromLevel)
+        let toTopPadding = mobileBracketTopPadding(level: fromLevel + 1)
+        let yOffset = headerHeight + topGap
+
+        let fromTopY = yOffset + fromTopPadding + CGFloat(fromTopIndex) * (cardHeight + fromSpacing) + cardHeight / 2
+        let fromBottomY = yOffset + fromTopPadding + CGFloat(fromBottomIndex) * (cardHeight + fromSpacing) + cardHeight / 2
+        let toY = yOffset + toTopPadding + CGFloat(toIndex) * (cardHeight + toSpacing) + cardHeight / 2
+        let midX: CGFloat = 18
+        let width: CGFloat = 38
+
+        return Path { path in
+            path.move(to: CGPoint(x: 0, y: fromTopY))
+            path.addLine(to: CGPoint(x: midX, y: fromTopY))
+            path.addLine(to: CGPoint(x: midX, y: fromBottomY))
+            path.addLine(to: CGPoint(x: 0, y: fromBottomY))
+
+            path.move(to: CGPoint(x: midX, y: (fromTopY + fromBottomY) / 2))
+            path.addLine(to: CGPoint(x: width, y: toY))
+        }
+        .stroke(
+            color.opacity(0.75),
+            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+        )
+        .shadow(color: color.opacity(0.35), radius: 4)
+    }
+
+    private func mobileBracketTopPadding(level: Int) -> CGFloat {
+        let cardHeight: CGFloat = 96
+        let baseSpacing: CGFloat = 10
+        let step = cardHeight + baseSpacing
+        return (pow(2.0, Double(level)) - 1) * step / 2
+    }
+
+    private func mobileBracketCardSpacing(level: Int) -> CGFloat {
+        let cardHeight: CGFloat = 96
+        let baseSpacing: CGFloat = 10
+        let step = cardHeight + baseSpacing
+        return pow(2.0, Double(level)) * step - cardHeight
+    }
+    
+    private func mobileBracketColumn(title: String, shortTitle: String, matches: [KnockoutMatch], accent: Color, level: Int) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(.black)
+                .foregroundStyle(.white)
+                .frame(width: 190)
+                .padding(.vertical, 8)
+                .background(accent.opacity(0.82))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(spacing: mobileBracketCardSpacing(level: level)) {
+                if matches.isEmpty {
+                    mobileBracketPendingCard()
+                } else {
+                    ForEach(Array(matches.enumerated()), id: \.offset) { index, match in
+                        mobileBracketMiniMatchCard(match: match, matchLabel: "\(shortTitle) \(index + 1)", accent: accent)
+                    }
+                }
+            }
+            .padding(.top, mobileBracketTopPadding(level: level))
+        }
+        .frame(width: 190, alignment: .top)
+    }
+
+    private var mobileBracketFinalColumn: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("FINAL")
+                .font(.caption)
+                .fontWeight(.black)
+                .foregroundStyle(Color(red: 0.03, green: 0.07, blue: 0.12))
+                .frame(width: 210)
+                .padding(.vertical, 8)
+                .background(Color.yellow.opacity(0.90))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            if let finalMatch = finalMatches.first {
+                mobileBracketMiniMatchCard(match: finalMatch, matchLabel: "FINAL", accent: .yellow)
+            } else {
+                mobileBracketPendingCard(width: 210)
+            }
+
+            VStack(spacing: 10) {
+                Text("🏆")
+                    .font(.system(size: 58))
+
+                if let champion = finalMatches.first?.winner {
+                    Text("CHAMPION")
+                        .font(.caption)
+                        .fontWeight(.black)
+                        .foregroundStyle(.yellow)
+
+                    Text("\(champion.flag) \(champion.name)")
+                        .font(.headline)
+                        .fontWeight(.black)
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                } else {
+                    Text("CHAMPION")
+                        .font(.caption)
+                        .fontWeight(.black)
+                        .foregroundStyle(.yellow.opacity(0.7))
+
+                    Text("Pending")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+            }
+            .frame(width: 210)
+            .padding(.vertical, 16)
+            .background(Color.yellow.opacity(0.10))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.yellow.opacity(0.45), lineWidth: 1)
+            )
+        }
+        .frame(width: 210, alignment: .top)
+        .padding(.top, mobileBracketTopPadding(level: 4))
+    }
+
+    private func mobileBracketMiniMatchCard(match: KnockoutMatch, matchLabel: String, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(matchLabel)
+                .font(.caption2)
+                .fontWeight(.black)
+                .foregroundStyle(.white.opacity(0.72))
+
+            mobileBracketTeamLine(team: match.homeTeam, score: match.homeScore, winner: match.winner?.id == match.homeTeam?.id)
+            mobileBracketTeamLine(team: match.awayTeam, score: match.awayScore, winner: match.winner?.id == match.awayTeam?.id)
+
+            if let winner = match.winner {
+                Text("Winner: \(winner.flag) \(winner.name)")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.green)
+                    .lineLimit(1)
+            }
+        }
+        .padding(9)
+        .frame(width: accent == .yellow ? 210 : 190, height: 96, alignment: .leading)
+        .background(Color.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(accent.opacity(0.65), lineWidth: 1)
+        )
+    }
+
+    private func mobileBracketTeamLine(team: Team?, score: Int?, winner: Bool) -> some View {
+        HStack(spacing: 6) {
+            Text(team?.flag ?? "❔")
+            Text(team?.name ?? "Pending")
+                .font(.caption)
+                .fontWeight(winner ? .black : .semibold)
+                .foregroundStyle(winner ? .white : .white.opacity(0.82))
+                .lineLimit(1)
+
+            Spacer()
+
+            Text(score.map { String($0) } ?? "-")
+                .font(.caption)
+                .fontWeight(.black)
+                .foregroundStyle(.white)
+        }
+    }
+
+    private func mobileBracketPendingCard(width: CGFloat = 190) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: "hourglass")
+                .foregroundStyle(.white.opacity(0.55))
+            Text("Pending")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(.white.opacity(0.65))
+        }
+        .frame(width: width, height: 72)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.16), lineWidth: 1)
+        )
+    }
+    
     private var headerBar: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
@@ -697,7 +976,7 @@ struct KnockoutView: View {
         }
         .padding(10)
         .frame(width: 210)
-        .background(Color.white.opacity(0.08))
+        .background(Color.white.opacity(0.18))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -1119,3 +1398,5 @@ struct SavedKnockoutData: Codable {
     let semiFinal: [KnockoutMatch]
     let final: [KnockoutMatch]
 }
+
+
