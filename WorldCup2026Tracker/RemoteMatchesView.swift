@@ -365,6 +365,8 @@ struct RemoteMatchesView: View {
             matchedCount += 1
             let localMatch = localMatches[matchIndex]
             print("MATCH FOUND: \(localMatch.homeTeam.name) - \(localMatch.awayTeam.name)")
+            print("LOCAL CURRENT SCORE BEFORE SYNC: \(localMatch.homeScore.map(String.init) ?? "nil") - \(localMatch.awayScore.map(String.init) ?? "nil")")
+            print("REMOTE SCORE TO APPLY: \(remoteHomeScore) - \(remoteAwayScore) | Remote status: \(remoteMatch.statusText)")
 
             let isReversed = isReversedMatch(local: localMatches[matchIndex], remote: remoteMatch)
             let newHomeScore = isReversed ? remoteAwayScore : remoteHomeScore
@@ -394,7 +396,17 @@ struct RemoteMatchesView: View {
         }
 
         let status = remoteMatch.statusText.uppercased()
-        return ["LIVE", "IN_PLAY", "PAUSED", "FINISHED"].contains(status)
+
+        return [
+            "LIVE",
+            "IN_PLAY",
+            "PAUSED",
+            "FINISHED",
+            "COMPLETED",
+            "COMPLETE",
+            "FULL_TIME",
+            "FT"
+        ].contains(status)
     }
 
     private func localMatchIndex(for remoteMatch: RemoteMatch) -> Int? {

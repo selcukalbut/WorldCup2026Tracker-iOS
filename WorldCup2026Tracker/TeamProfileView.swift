@@ -1,13 +1,4 @@
 //
-//  TeamProfileView.swift.swift
-//  GlobalSportsTracker
-//
-//  Created by Selcuk Albut on 5.06.2026.
-//
-
-import Foundation
-
-//
 //  TeamProfileView.swift
 //  GlobalSportsTracker
 //
@@ -29,13 +20,21 @@ struct TeamProfileView: View {
                   let awayScore = match.awayScore else {
                 continue
             }
-            
+
+            let normalizedTeamName = normalizeTeamName(team.name)
+            let isHomeTeam = normalizeTeamName(match.homeTeam.name) == normalizedTeamName
+            let isAwayTeam = normalizeTeamName(match.awayTeam.name) == normalizedTeamName
+
+            guard isHomeTeam || isAwayTeam else {
+                continue
+            }
+
             standing.played += 1
-            
-            if match.homeTeam.id == team.id {
+
+            if isHomeTeam {
                 standing.goalsFor += homeScore
                 standing.goalsAgainst += awayScore
-                
+
                 if homeScore > awayScore {
                     standing.won += 1
                 } else if homeScore < awayScore {
@@ -43,10 +42,10 @@ struct TeamProfileView: View {
                 } else {
                     standing.drawn += 1
                 }
-            } else if match.awayTeam.id == team.id {
+            } else if isAwayTeam {
                 standing.goalsFor += awayScore
                 standing.goalsAgainst += homeScore
-                
+
                 if awayScore > homeScore {
                     standing.won += 1
                 } else if awayScore < homeScore {
@@ -61,9 +60,22 @@ struct TeamProfileView: View {
     }
     
     private var teamMatches: [Match] {
-        matches.filter {
-            $0.homeTeam.id == team.id || $0.awayTeam.id == team.id
+        let normalizedTeamName = normalizeTeamName(team.name)
+
+        let filtered = matches.filter { match in
+            normalizeTeamName(match.homeTeam.name) == normalizedTeamName ||
+            normalizeTeamName(match.awayTeam.name) == normalizedTeamName
         }
+
+        return filtered
+    }
+
+    private func normalizeTeamName(_ name: String) -> String {
+        name
+            .lowercased()
+            .replacingOccurrences(of: "türkiye", with: "turkey")
+            .replacingOccurrences(of: "south korea", with: "korea republic")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     private var completedMatches: [Match] {
@@ -89,6 +101,21 @@ struct TeamProfileView: View {
             .padding(32)
         }
         .navigationTitle(team.name)
+        .onAppear {
+            print("========== Team Profile Debug ==========")
+            print("Selected team: \(team.name) | ID: \(team.id)")
+            print("Total matches received by TeamProfileView: \(matches.count)")
+            print("Team matches found: \(teamMatches.count)")
+            print("Completed team matches found: \(completedMatches.count)")
+            for match in teamMatches {
+                let homeScoreText = match.homeScore != nil ? String(match.homeScore!) : "nil"
+                let awayScoreText = match.awayScore != nil ? String(match.awayScore!) : "nil"
+
+                print("PROFILE MATCH: \(match.homeTeam.name) \(homeScoreText) - \(awayScoreText) \(match.awayTeam.name)")
+            }
+            print("Standing calculated: P=\(teamStanding.played), W=\(teamStanding.won), D=\(teamStanding.drawn), L=\(teamStanding.lost), GF=\(teamStanding.goalsFor), GA=\(teamStanding.goalsAgainst), Pts=\(teamStanding.points)")
+            print("========================================")
+        }
     }
     
     private var headerCard: some View {
@@ -195,7 +222,7 @@ struct TeamProfileView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("\(match.homeTeam.flag) \(match.homeTeam.name)")
-                    .fontWeight(match.homeTeam.id == team.id ? .bold : .regular)
+                    .fontWeight(normalizeTeamName(match.homeTeam.name) == normalizeTeamName(team.name) ? .bold : .regular)
                 
                 Spacer()
                 
@@ -212,7 +239,7 @@ struct TeamProfileView: View {
                 Spacer()
                 
                 Text("\(match.awayTeam.flag) \(match.awayTeam.name)")
-                    .fontWeight(match.awayTeam.id == team.id ? .bold : .regular)
+                    .fontWeight(normalizeTeamName(match.awayTeam.name) == normalizeTeamName(team.name) ? .bold : .regular)
             }
             
             HStack {

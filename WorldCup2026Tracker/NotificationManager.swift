@@ -146,5 +146,71 @@ final class NotificationManager {
             }
         }
     }
-    
+    func scheduleFavoriteTeamReminders(matches: [Match], favoriteTeamID: String) {
+                
+        guard !favoriteTeamID.isEmpty else { return }
+
+        let favoriteMatches = matches.filter {
+            ($0.homeTeam.id == favoriteTeamID || $0.awayTeam.id == favoriteTeamID) &&
+            $0.homeScore == nil &&
+            $0.awayScore == nil
+        }
+
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let favoriteReminderIDs = requests
+                .map { $0.identifier }
+                .filter { $0.hasPrefix("favorite-match-") }
+
+            UNUserNotificationCenter.current()
+                .removePendingNotificationRequests(withIdentifiers: favoriteReminderIDs)
+        }
+
+        for match in favoriteMatches {
+            guard let matchDate = self.matchDate(from: match.date) else {
+                continue
+            }
+
+            let reminderDate = matchDate.addingTimeInterval(-3600)
+
+            guard reminderDate > Date() else {
+                continue
+            }
+
+            let content = UNMutableNotificationContent()
+            content.title = "⭐ Favorite Team Match"
+            content.body = "\(match.homeTeam.name) vs \(match.awayTeam.name) starts in 1 hour."
+            content.sound = .default
+
+            let dateComponents = Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute],
+                from: reminderDate
+            )
+
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: dateComponents,
+                repeats: false
+            )
+
+            let request = UNNotificationRequest(
+                identifier: "favorite-match-\(match.id.uuidString)",
+                content: content,
+                trigger: trigger
+            )
+
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error {
+                    print("Favorite team notification could not be scheduled: \(error.localizedDescription)")
+                } else {
+                    print("Favorite team notification scheduled: \(match.homeTeam.name) vs \(match.awayTeam.name)")
+                }
+            }
+        }
+    }
+
+    private func matchDate(from text: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "d MMMM yyyy"
+        return formatter.date(from: text)
+    }
 }

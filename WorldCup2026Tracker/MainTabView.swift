@@ -43,6 +43,29 @@ struct MainTabView: View {
                     Label("More", systemImage: "ellipsis.circle.fill")
                 }
         }
+        
+        .task {
+
+            let granted = await NotificationManager.shared.requestPermission()
+            print("Favorite Team ID = \(favoriteTeamID)")
+
+            if granted {
+
+                NotificationManager.shared.scheduleFavoriteTeamReminders(
+                    matches: matches,
+                    favoriteTeamID: favoriteTeamID
+                )
+            }
+        }
+        .onChange(of: favoriteTeamID) { _, newValue in
+
+            print("Favorite Team changed: \(newValue)")
+
+            NotificationManager.shared.scheduleFavoriteTeamReminders(
+                matches: matches,
+                favoriteTeamID: newValue
+            )
+        }
     }
 }
 
