@@ -8,6 +8,7 @@ struct KnockoutView: View {
     @State private var roundOf16Matches: [KnockoutMatch] = []
     @State private var quarterFinalMatches: [KnockoutMatch] = []
     @State private var semiFinalMatches: [KnockoutMatch] = []
+    @State private var thirdPlaceMatches: [KnockoutMatch] = []
     @State private var finalMatches: [KnockoutMatch] = []
     @AppStorage("savedKnockoutMatches") private var savedKnockoutData: Data = Data()
     @State private var selectedMobileRound: KnockoutRound = .roundOf32
@@ -68,9 +69,14 @@ struct KnockoutView: View {
         .onChange(of: semiFinalMatches) { _, _ in
             guard !isSimulatingKnockout else { return }
             updateFinal()
+            updateThirdPlace()
             saveKnockoutMatches()
         }
         .onChange(of: finalMatches) { _, _ in
+            guard !isSimulatingKnockout else { return }
+            saveKnockoutMatches()
+        }
+        .onChange(of: thirdPlaceMatches) { _, _ in
             guard !isSimulatingKnockout else { return }
             saveKnockoutMatches()
         }
@@ -120,9 +126,14 @@ struct KnockoutView: View {
         .onChange(of: semiFinalMatches) { _, _ in
             guard !isSimulatingKnockout else { return }
             updateFinal()
+            updateThirdPlace()
             saveKnockoutMatches()
         }
         .onChange(of: finalMatches) { _, _ in
+            guard !isSimulatingKnockout else { return }
+            saveKnockoutMatches()
+        }
+        .onChange(of: thirdPlaceMatches) { _, _ in
             guard !isSimulatingKnockout else { return }
             saveKnockoutMatches()
         }
@@ -165,7 +176,7 @@ struct KnockoutView: View {
             
             HStack(spacing: 10) {
                 mobileInfoBox(value: "32", title: "Team")
-                mobileInfoBox(value: "5", title: "Rounds")
+                mobileInfoBox(value: "6", title: "Rounds")
                 mobileInfoBox(value: finalMatches.first?.winner == nil ? "Pending" : "Ready", title: "Champion")
             }
         }
@@ -232,29 +243,24 @@ struct KnockoutView: View {
     }
     
     private var mobileChampionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("🏅 Champion")
+        VStack(alignment: .leading, spacing: 14) {
+            Text("🏆 Tournament Podium")
                 .font(.title2)
-                .fontWeight(.bold)
-            
+                .fontWeight(.black)
+
             if let champion = finalMatches.first?.winner {
-                HStack(spacing: 14) {
-                    Text(champion.flag)
-                        .font(.largeTitle)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(champion.name)
-                            .font(.title3)
-                            .fontWeight(.bold)
-                        Text("Tournament Champion")
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    Spacer()
-                }
+                podiumRow(icon: "🥇", title: "Champion", team: champion)
             } else {
                 Text("No champion has been determined yet. You can progress by simulating the knockout stage or entering match scores.")
                     .foregroundStyle(.secondary)
+            }
+
+            if let runnerUp = finalMatches.first?.loser {
+                podiumRow(icon: "🥈", title: "Runner-Up", team: runnerUp)
+            }
+
+            if let thirdPlace = thirdPlaceMatches.first?.winner {
+                podiumRow(icon: "🥉", title: "Third Place", team: thirdPlace)
             }
         }
         .padding()
@@ -264,6 +270,28 @@ struct KnockoutView: View {
             RoundedRectangle(cornerRadius: 18)
                 .stroke(Color.yellow.opacity(0.35), lineWidth: 1.2)
         )
+    }
+
+    private func podiumRow(icon: String, title: String, team: Team) -> some View {
+        HStack(spacing: 14) {
+            Text(icon)
+                .font(.largeTitle)
+
+            Text(team.flag)
+                .font(.title)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(team.name)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 6)
     }
     
     private var mobileWaitingCard: some View {
@@ -379,6 +407,7 @@ struct KnockoutView: View {
         case .roundOf16: return "Last 16"
         case .quarterFinal: return "Quarter-Finals"
         case .semiFinal: return "Semi-Finals"
+        case .thirdPlace: return "Third Place"
         case .final: return "Finals"
         }
     }
@@ -389,6 +418,7 @@ struct KnockoutView: View {
         case .roundOf16: return roundOf16Matches
         case .quarterFinal: return quarterFinalMatches
         case .semiFinal: return semiFinalMatches
+        case .thirdPlace: return thirdPlaceMatches
         case .final: return finalMatches
         }
     }
@@ -403,6 +433,8 @@ struct KnockoutView: View {
             return quarterFinalMatches.indices.map { $quarterFinalMatches[$0] }
         case .semiFinal:
             return semiFinalMatches.indices.map { $semiFinalMatches[$0] }
+        case .thirdPlace:
+            return thirdPlaceMatches.indices.map { $thirdPlaceMatches[$0] }
         case .final:
             return finalMatches.indices.map { $finalMatches[$0] }
         }
@@ -442,6 +474,7 @@ struct KnockoutView: View {
                     mobileBracketColumn(title: "SEMI-FINALS", shortTitle: "SF", matches: semiFinalMatches, accent: .orange, level: 3)
                     mobileBracketConnector(fromCount: semiFinalMatches.count, toCount: finalMatches.count, fromLevel: 3, color: .yellow)
                     mobileBracketFinalColumn
+                    mobileBracketColumn(title: "THIRD PLACE", shortTitle: "3P", matches: thirdPlaceMatches, accent: .purple, level: 3)
                 }
                 .padding(14)
                 .background(
@@ -468,7 +501,6 @@ struct KnockoutView: View {
         let safeFromCount = max(fromCount, 1)
         let safeToCount = max(toCount, 1)
         let cardHeight: CGFloat = 96
-        let baseSpacing: CGFloat = 10
         let fromSpacing = mobileBracketCardSpacing(level: fromLevel)
         let connectorTopPadding = mobileBracketTopPadding(level: fromLevel)
         let headerHeight: CGFloat = 32
@@ -609,6 +641,32 @@ struct KnockoutView: View {
                         .fontWeight(.bold)
                         .foregroundStyle(.white.opacity(0.65))
                 }
+
+                if let runnerUp = finalMatches.first?.loser {
+                    Divider().background(Color.white.opacity(0.35))
+                    Text("🥈 Runner-Up")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white.opacity(0.75))
+                    Text("\(runnerUp.flag) \(runnerUp.name)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                }
+
+                if let thirdPlace = thirdPlaceMatches.first?.winner {
+                    Divider().background(Color.white.opacity(0.35))
+                    Text("🥉 Third Place")
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white.opacity(0.75))
+                    Text("\(thirdPlace.flag) \(thirdPlace.name)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                }
             }
             .frame(width: 210)
             .padding(.vertical, 16)
@@ -618,6 +676,7 @@ struct KnockoutView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.yellow.opacity(0.45), lineWidth: 1)
             )
+
         }
         .frame(width: 210, alignment: .top)
         .padding(.top, mobileBracketTopPadding(level: 4))
@@ -1090,6 +1149,18 @@ struct KnockoutView: View {
             newMatches: createMatches(from: winners, round: .final)
         )
     }
+    private func updateThirdPlace() {
+        guard semiFinalMatches.count >= 2 else {
+            thirdPlaceMatches = []
+            return
+        }
+
+        let semiFinalLosers = semiFinalMatches.compactMap { $0.loser }
+        thirdPlaceMatches = preserveScores(
+            oldMatches: thirdPlaceMatches,
+            newMatches: createMatches(from: semiFinalLosers, round: .thirdPlace)
+        )
+    }
     
     private func preserveScores(oldMatches: [KnockoutMatch], newMatches: [KnockoutMatch]) -> [KnockoutMatch] {
         var result: [KnockoutMatch] = []
@@ -1197,6 +1268,7 @@ struct KnockoutView: View {
         roundOf16Matches = []
         quarterFinalMatches = []
         semiFinalMatches = []
+        thirdPlaceMatches = []
         finalMatches = []
         selectedMobileRound = .roundOf32
         savedKnockoutData = Data()
@@ -1256,6 +1328,12 @@ struct KnockoutView: View {
         )
         simulateMatches(&simulatedSemiFinals)
 
+        var simulatedThirdPlaceMatches = createMatches(
+            from: simulatedSemiFinals.compactMap { $0.loser },
+            round: .thirdPlace
+        )
+        simulateMatches(&simulatedThirdPlaceMatches)
+
         var simulatedFinals = createMatches(
             from: simulatedSemiFinals.compactMap { $0.winner },
             round: .final
@@ -1267,6 +1345,7 @@ struct KnockoutView: View {
         print("Round of 16: \(simulatedRoundOf16.count) matches, winners: \(simulatedRoundOf16.compactMap { $0.winner }.count)")
         print("Quarter-Finals: \(simulatedQuarterFinals.count) matches, winners: \(simulatedQuarterFinals.compactMap { $0.winner }.count)")
         print("Semi-Finals: \(simulatedSemiFinals.count) matches, winners: \(simulatedSemiFinals.compactMap { $0.winner }.count)")
+        print("Third Place: \(simulatedThirdPlaceMatches.count) matches, winners: \(simulatedThirdPlaceMatches.compactMap { $0.winner }.count)")
         print("Finals: \(simulatedFinals.count) matches, winners: \(simulatedFinals.compactMap { $0.winner }.count)")
         print("===============================================")
 
@@ -1274,6 +1353,7 @@ struct KnockoutView: View {
         roundOf16Matches = simulatedRoundOf16
         quarterFinalMatches = simulatedQuarterFinals
         semiFinalMatches = simulatedSemiFinals
+        thirdPlaceMatches = simulatedThirdPlaceMatches
         finalMatches = simulatedFinals
         saveKnockoutMatches()
 
@@ -1347,6 +1427,7 @@ struct KnockoutView: View {
             roundOf16: roundOf16Matches,
             quarterFinal: quarterFinalMatches,
             semiFinal: semiFinalMatches,
+            thirdPlace: thirdPlaceMatches,
             final: finalMatches
         )
         
@@ -1369,6 +1450,7 @@ struct KnockoutView: View {
             roundOf16Matches = saved.roundOf16
             quarterFinalMatches = saved.quarterFinal
             semiFinalMatches = saved.semiFinal
+            thirdPlaceMatches = saved.thirdPlace
             finalMatches = saved.final
         } catch {
             roundOf32Matches = createRoundOf32Matches()
@@ -1396,6 +1478,7 @@ struct SavedKnockoutData: Codable {
     let roundOf16: [KnockoutMatch]
     let quarterFinal: [KnockoutMatch]
     let semiFinal: [KnockoutMatch]
+    let thirdPlace: [KnockoutMatch]
     let final: [KnockoutMatch]
 }
 

@@ -81,6 +81,7 @@ enum KnockoutRound: String, Codable, CaseIterable {
     case roundOf16 = "Round of 16"
     case quarterFinal = "Quarter_Final"
     case semiFinal = "Semi-Final"
+    case thirdPlace = "Third Place"
     case final = "Final"
 }
 
@@ -128,4 +129,11 @@ struct KnockoutMatch: Identifiable, Codable, Equatable {
             return nil
         }
     }
+    var loser: Team? {
+        guard let homeScore, let awayScore else { return nil }
+        if homeScore < awayScore { return homeTeam }
+        if awayScore < homeScore { return awayTeam }
+        return nil
+    }
+    
 }
