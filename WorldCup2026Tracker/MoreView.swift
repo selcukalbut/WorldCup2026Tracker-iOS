@@ -44,6 +44,10 @@ struct MoreView: View {
                     StatisticsView(teams: teamsFromMatches, matches: matches)
                 }
 
+                NavigationLink("🏆 Tournament Records") {
+                    TournamentRecordsView(teams: teamsFromMatches, matches: matches)
+                }
+
                 NavigationLink("🏟 Host Cities") {
                     HostCitiesView(matches: matches)
                 }

@@ -3,6 +3,7 @@ import SwiftUI
 struct RemoteMatchesView: View {
     @StateObject private var apiService = APIService.shared
     @Binding private var localMatches: [Match]
+    @AppStorage("savedLocalMatches") private var savedLocalMatchesData: Data = Data()
     @State private var matches: [RemoteMatch] = []
     @State private var searchText = ""
     @State private var autoRefreshTask: Task<Void, Never>?
@@ -478,6 +479,12 @@ struct RemoteMatchesView: View {
 
         if didUpdate {
             localMatches = localMatches
+            saveLocalMatchesToStorage()
+        } else {
+            let playedCount = localMatches.filter { $0.homeScore != nil && $0.awayScore != nil }.count
+            if playedCount > 0 {
+                saveLocalMatchesToStorage()
+            }
         }
         print("Matched remote matches: \(matchedCount)")
         print("Unmatched remote matches: \(unmatchedCount)")
@@ -503,6 +510,18 @@ struct RemoteMatchesView: View {
             "FULL_TIME",
             "FT"
         ].contains(status)
+    }
+
+    private func saveLocalMatchesToStorage() {
+        guard let encoded = try? JSONEncoder().encode(localMatches) else {
+            print("Could not encode local matches for storage")
+            return
+        }
+
+        savedLocalMatchesData = encoded
+
+        let playedCount = localMatches.filter { $0.homeScore != nil && $0.awayScore != nil }.count
+        print("Saved local matches to storage. Played matches: \(playedCount)")
     }
 
     private func localMatchIndex(for remoteMatch: RemoteMatch) -> Int? {
