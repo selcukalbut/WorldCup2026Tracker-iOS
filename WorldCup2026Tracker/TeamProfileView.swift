@@ -5,12 +5,30 @@
 //  Created by Selcuk Albut on 5.06.2026.
 //
 
+
 import SwiftUI
+
+private struct TeamProfileSavedKnockoutData: Codable {
+    let roundOf32: [TeamProfileSavedKnockoutMatch]
+    let roundOf16: [TeamProfileSavedKnockoutMatch]
+    let quarterFinal: [TeamProfileSavedKnockoutMatch]
+    let semiFinal: [TeamProfileSavedKnockoutMatch]
+    let final: [TeamProfileSavedKnockoutMatch]
+    let thirdPlace: [TeamProfileSavedKnockoutMatch]
+}
+
+private struct TeamProfileSavedKnockoutMatch: Codable {
+    let homeTeam: Team?
+    let awayTeam: Team?
+    let winner: Team?
+    let loser: Team?
+}
 
 struct TeamProfileView: View {
     let team: Team
     let matches: [Match]
     let favoriteTeamID: String
+    @AppStorage("savedKnockoutMatches") private var savedKnockoutData: Data = Data()
     
     private var teamStanding: Standing {
         var standing = Standing(team: team)
@@ -90,10 +108,88 @@ struct TeamProfileView: View {
         team.id == favoriteTeamID
     }
     
+    private var savedKnockoutResults: TeamProfileSavedKnockoutData? {
+        guard !savedKnockoutData.isEmpty else { return nil }
+        return try? JSONDecoder().decode(TeamProfileSavedKnockoutData.self, from: savedKnockoutData)
+    }
+
+    private var tournamentStatusText: String {
+        if let champion = savedKnockoutResults?.final.first?.winner,
+           normalizeTeamName(champion.name) == normalizeTeamName(team.name) {
+            return "🏆 Tournament Champion"
+        }
+
+        if let runnerUp = savedKnockoutResults?.final.first?.loser,
+           normalizeTeamName(runnerUp.name) == normalizeTeamName(team.name) {
+            return "🥈 Runner-Up"
+        }
+
+        if let thirdPlace = savedKnockoutResults?.thirdPlace.first?.winner,
+           normalizeTeamName(thirdPlace.name) == normalizeTeamName(team.name) {
+            return "🥉 Third Place"
+        }
+
+        if appearsInKnockoutStage {
+            return "✅ Qualified to Knockout Stage"
+        }
+
+        if completedMatches.count == 3 {
+            return "❌ Eliminated in Group Stage"
+        }
+
+        return "⏳ Group Stage in Progress"
+    }
+
+    private var appearsInKnockoutStage: Bool {
+        guard let results = savedKnockoutResults else { return false }
+
+        let knockoutMatches = results.roundOf32 +
+            results.roundOf16 +
+            results.quarterFinal +
+            results.semiFinal +
+            results.final +
+            results.thirdPlace
+
+        return knockoutMatches.contains { match in
+            let normalizedTeamName = normalizeTeamName(team.name)
+            let isHomeTeam = match.homeTeam.map { normalizeTeamName($0.name) == normalizedTeamName } ?? false
+            let isAwayTeam = match.awayTeam.map { normalizeTeamName($0.name) == normalizedTeamName } ?? false
+            return isHomeTeam || isAwayTeam
+        }
+    }
+
+    private var tournamentStatusCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Tournament Status")
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text(tournamentStatusText)
+                .font(.headline)
+                .fontWeight(.semibold)
+
+            HStack(spacing: 12) {
+                Label("\(completedMatches.count) Played", systemImage: "checkmark.circle.fill")
+                Label("\(upcomingMatches.count) Upcoming", systemImage: "calendar")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(.quaternary, lineWidth: 1)
+        )
+    }
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 headerCard
+                tournamentStatusCard
                 statisticsGrid
                 matchesSection(title: "Completed Matches", matches: completedMatches)
                 matchesSection(title: "Upcoming Matches", matches: upcomingMatches)

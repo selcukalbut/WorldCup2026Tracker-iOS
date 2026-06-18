@@ -18,6 +18,44 @@ struct RemoteMatchesView: View {
             $0.awayTeam.localizedCaseInsensitiveContains(searchText)
         }
     }
+    
+    private var liveMatches: [RemoteMatch] {
+        matches
+            .filter { isActuallyLive($0) }
+            .sorted {
+                ($0.matchDate ?? Date.distantPast) < ($1.matchDate ?? Date.distantPast)
+            }
+    }
+
+    private var nextUpcomingMatch: RemoteMatch? {
+        let now = Date()
+
+        return matches
+            .filter {
+                let status = ($0.status ?? "").uppercased()
+                guard let matchDate = $0.matchDate else { return false }
+                return (status == "SCHEDULED" || status == "TIMED") && matchDate > now
+            }
+            .sorted {
+                ($0.matchDate ?? Date.distantFuture) < ($1.matchDate ?? Date.distantFuture)
+            }
+            .first
+    }
+
+    private func isActuallyLive(_ match: RemoteMatch) -> Bool {
+        let status = (match.status ?? "").uppercased()
+        guard status == "LIVE" || status == "IN_PLAY" else { return false }
+
+        guard let matchDate = match.matchDate else {
+            return true
+        }
+
+        let now = Date()
+        let liveWindowStart = matchDate.addingTimeInterval(-15 * 60)
+        let liveWindowEnd = matchDate.addingTimeInterval(1 * 60 * 60)
+
+        return now >= liveWindowStart && now <= liveWindowEnd
+    }
 
     private var groupedMatches: [(date: Date, matches: [RemoteMatch])] {
         let calendar = Calendar.current
@@ -44,6 +82,8 @@ struct RemoteMatchesView: View {
 
                 TextField("Search team name...", text: $searchText)
                     .textFieldStyle(.roundedBorder)
+                
+                liveStatusCard
 
                 LazyVStack(alignment: .leading, spacing: 20) {
                     ForEach(groupedMatches, id: \.date) { group in
@@ -70,7 +110,46 @@ struct RemoteMatchesView: View {
             stopAutoRefresh()
         }
     }
+    
+    private var liveStatusCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if !liveMatches.isEmpty {
+                Text("🔴 Live Now")
+                    .font(.title2)
+                    .fontWeight(.bold)
 
+                ForEach(liveMatches) { match in
+                    matchCard(match)
+                }
+
+            } else if let nextMatch = nextUpcomingMatch {
+                Text("⏳ No live match right now")
+                    .font(.headline)
+                    .fontWeight(.bold)
+
+                Text("Next live match: \(nextMatch.homeTeam) vs \(nextMatch.awayTeam)")
+                    .font(.subheadline)
+
+                if let date = nextMatch.matchDate {
+                    Text("Starts in \(timeUntil(date))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Text(date.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+            } else {
+                Text("✅ No upcoming live match found.")
+                    .font(.headline)
+            }
+        }
+        .padding()
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -304,6 +383,20 @@ struct RemoteMatchesView: View {
 
         return "VS"
     }
+    private func timeUntil(_ date: Date) -> String {
+        let interval = max(0, Int(date.timeIntervalSinceNow))
+        let days = interval / 86400
+        let hours = (interval % 86400) / 3600
+        let minutes = (interval % 3600) / 60
+
+        if days > 0 {
+            return "\(days)d \(hours)h"
+        } else if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
+        }
+    }
 
     private func summaryCard(_ title: String, value: String, icon: String) -> some View {
         VStack(spacing: 6) {
@@ -383,6 +476,9 @@ struct RemoteMatchesView: View {
             }
         }
 
+        if didUpdate {
+            localMatches = localMatches
+        }
         print("Matched remote matches: \(matchedCount)")
         print("Unmatched remote matches: \(unmatchedCount)")
         print("Did update local matches: \(didUpdate)")

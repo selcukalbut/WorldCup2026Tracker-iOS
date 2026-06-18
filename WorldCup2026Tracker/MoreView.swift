@@ -5,19 +5,43 @@ struct MoreView: View {
     @Binding var favoriteTeamID: String
     @AppStorage("selectedTournament") private var selectedTournament: String = ""
 
+    private var teamsFromMatches: [Team] {
+        var seenIDs: Set<String> = []
+        var result: [Team] = []
+
+        for match in matches {
+            if !seenIDs.contains(match.homeTeam.id) {
+                result.append(match.homeTeam)
+                seenIDs.insert(match.homeTeam.id)
+            }
+
+            if !seenIDs.contains(match.awayTeam.id) {
+                result.append(match.awayTeam)
+                seenIDs.insert(match.awayTeam.id)
+            }
+        }
+
+        return result.sorted {
+            if $0.group != $1.group {
+                return $0.group < $1.group
+            }
+            return $0.name < $1.name
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
                 NavigationLink("👥 Groups") {
-                    GroupsView(teams: sampleTeams, matches: matches, favoriteTeamID: $favoriteTeamID)
+                    GroupsView(teams: teamsFromMatches, matches: matches, favoriteTeamID: $favoriteTeamID)
                 }
 
                 NavigationLink("🏆 Knockout Stage") {
-                    KnockoutView(teams: sampleTeams, matches: matches)
+                    KnockoutView(teams: teamsFromMatches, matches: matches)
                 }
                 
                 NavigationLink("📊 Statistics") {
-                    StatisticsView(teams: sampleTeams, matches: matches)
+                    StatisticsView(teams: teamsFromMatches, matches: matches)
                 }
 
                 NavigationLink("🏟 Host Cities") {
@@ -39,5 +63,5 @@ struct MoreView: View {
 }
 
 #Preview {
-    MoreView(matches: .constant(sampleMatches), favoriteTeamID: .constant(""))
+    MoreView(matches: .constant([]), favoriteTeamID: .constant(""))
 }
