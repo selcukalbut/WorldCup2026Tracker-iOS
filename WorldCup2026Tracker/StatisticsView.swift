@@ -12,6 +12,20 @@ struct StatisticsView: View {
     let matches: [Match]
 
     @AppStorage("savedKnockoutMatches") private var savedKnockoutData: Data = Data()
+    @AppStorage("savedLocalMatches") private var savedLocalMatchesData: Data = Data()
+
+    private var effectiveMatches: [Match] {
+        guard !savedLocalMatchesData.isEmpty,
+              let decoded = try? JSONDecoder().decode([Match].self, from: savedLocalMatchesData),
+              !decoded.isEmpty else {
+            return matches
+        }
+
+        let currentPlayedCount = matches.filter { $0.homeScore != nil && $0.awayScore != nil }.count
+        let savedPlayedCount = decoded.filter { $0.homeScore != nil && $0.awayScore != nil }.count
+
+        return savedPlayedCount > currentPlayedCount ? decoded : matches
+    }
     
     var body: some View {
         ScrollView {
@@ -81,6 +95,32 @@ struct StatisticsView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
 
                 VStack(alignment: .leading, spacing: 12) {
+                    Text("🌍 Group Rankings")
+                        .font(.title2)
+                        .fontWeight(.bold)
+
+                    rankingSection(title: "Most Goals by Group", rows: topGoalGroups)
+                    rankingSection(title: "Most Competitive Groups", rows: mostCompetitiveGroups)
+                    rankingSection(title: "Best Defensive Groups", rows: bestDefensiveGroups)
+                }
+                .padding()
+                .background(.regularMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("⚔️ Attack & Defense Rankings")
+                        .font(.title2)
+                        .fontWeight(.bold)
+
+                    rankingSection(title: "Best Attacks", rows: bestAttacks)
+                    rankingSection(title: "Best Defenses", rows: bestDefenses)
+                    rankingSection(title: "Unbeaten Teams", rows: unbeatenTeams)
+                }
+                .padding()
+                .background(.regularMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                VStack(alignment: .leading, spacing: 12) {
                     Text("🏅 Tournament Awards")
                         .font(.title2)
                         .fontWeight(.bold)
@@ -106,6 +146,47 @@ struct StatisticsView: View {
                     statisticRow(title: "Final", value: "\(savedKnockoutResults?.final.count ?? 0) match")
                     statisticRow(title: "Third Place", value: "\(savedKnockoutResults?.thirdPlace.count ?? 0) match")
                 }
+                .padding()
+                .background(.regularMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("📊 Match Outcomes")
+                        .font(.title2)
+                        .fontWeight(.bold)
+
+                    statisticRow(title: "Home Wins", value: "\(homeWins)")
+                    statisticRow(title: "Away Wins", value: "\(awayWins)")
+                    statisticRow(title: "Draws", value: "\(drawMatches)")
+                }
+                .padding()
+                .background(.regularMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("⚽ Goal Distribution")
+                        .font(.title2)
+                        .fontWeight(.bold)
+
+                    statisticRow(title: "0–1 Goals", value: "\(lowScoringMatches)")
+                    statisticRow(title: "2–3 Goals", value: "\(mediumScoringMatches)")
+                    statisticRow(title: "4+ Goals", value: "\(highScoringMatches)")
+                }
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("🔥 Tournament Highlights")
+                        .font(.title2)
+                        .fontWeight(.bold)
+
+                    statisticRow(title: "Highest Scoring Match", value: highestScoringMatch)
+                    statisticRow(title: "Biggest Win", value: biggestWin)
+                    statisticRow(title: "Most Goals by One Team", value: mostGoalsByOneTeam)
+                    statisticRow(title: "Clean Sheets", value: cleanSheetsLeader)
+                }
+                .padding()
+                .background(.regularMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                
                 .padding()
                 .background(.regularMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -180,7 +261,7 @@ struct StatisticsView: View {
     }
     
     private var playedMatches: [Match] {
-        matches.filter { $0.homeScore != nil && $0.awayScore != nil }
+        effectiveMatches.filter { $0.homeScore != nil && $0.awayScore != nil }
     }
     
     private var totalGoals: Int {
@@ -269,6 +350,175 @@ struct StatisticsView: View {
         )
         .map { "\($0.team.flag) \($0.team.name) - AV \($0.goalDifference)" }
     }
+
+    private var groupSummaries: [(group: String, goals: Int, goalsAgainst: Int, played: Int, avgGoals: Double, drawRate: Double)] {
+        let groups = Array(Set(teams.map { $0.group })).sorted()
+
+        return groups.map { group in
+            let groupMatches = effectiveMatches.filter { $0.group == group && $0.homeScore != nil && $0.awayScore != nil }
+            let goals = groupMatches.reduce(0) { total, match in
+                total + (match.homeScore ?? 0) + (match.awayScore ?? 0)
+            }
+            let draws = groupMatches.filter { ($0.homeScore ?? 0) == ($0.awayScore ?? 0) }.count
+            let drawRate = groupMatches.isEmpty ? 0.0 : Double(draws) / Double(groupMatches.count)
+            let avgGoals = groupMatches.isEmpty ? 0.0 : Double(goals) / Double(groupMatches.count)
+
+            return (
+                group: group,
+                goals: goals,
+                goalsAgainst: goals,
+                played: groupMatches.count,
+                avgGoals: avgGoals,
+                drawRate: drawRate
+            )
+        }
+    }
+
+    private var topGoalGroups: [String] {
+        Array(
+            groupSummaries
+                .sorted {
+                    if $0.goals != $1.goals {
+                        return $0.goals > $1.goals
+                    }
+                    return $0.avgGoals > $1.avgGoals
+                }
+                .prefix(5)
+        )
+        .map { "Group \($0.group) - \($0.goals) goals" }
+    }
+
+    private var mostCompetitiveGroups: [String] {
+        Array(
+            groupSummaries
+                .filter { $0.played > 0 }
+                .sorted {
+                    if $0.drawRate != $1.drawRate {
+                        return $0.drawRate > $1.drawRate
+                    }
+                    return $0.avgGoals < $1.avgGoals
+                }
+                .prefix(5)
+        )
+        .map { "Group \($0.group) - \(Int($0.drawRate * 100))% draws" }
+    }
+
+    private var bestDefensiveGroups: [String] {
+        Array(
+            groupSummaries
+                .filter { $0.played > 0 }
+                .sorted {
+                    let lhsAvg = Double($0.goalsAgainst) / Double(max($0.played, 1))
+                    let rhsAvg = Double($1.goalsAgainst) / Double(max($1.played, 1))
+                    return lhsAvg < rhsAvg
+                }
+                .prefix(5)
+        )
+        .map {
+            let avg = Double($0.goalsAgainst) / Double(max($0.played, 1))
+            return "Group \($0.group) - \(String(format: "%.1f", avg)) goals/match"
+        }
+    }
+
+    private var bestAttacks: [String] {
+        Array(
+            allStandings
+                .sorted {
+                    if $0.goalsFor != $1.goalsFor {
+                        return $0.goalsFor > $1.goalsFor
+                    }
+                    return $0.goalDifference > $1.goalDifference
+                }
+                .prefix(5)
+        )
+        .map { "\($0.team.flag) \($0.team.name) - \($0.goalsFor) goals" }
+    }
+
+    private var bestDefenses: [String] {
+        Array(
+            allStandings
+                .filter { $0.played > 0 }
+                .sorted {
+                    if $0.goalsAgainst != $1.goalsAgainst {
+                        return $0.goalsAgainst < $1.goalsAgainst
+                    }
+                    return $0.goalDifference > $1.goalDifference
+                }
+                .prefix(5)
+        )
+        .map { "\($0.team.flag) \($0.team.name) - \($0.goalsAgainst) conceded" }
+    }
+
+    private var unbeatenTeams: [String] {
+        Array(
+            allStandings
+                .filter { $0.played > 0 && $0.lost == 0 }
+                .sorted {
+                    if $0.points != $1.points {
+                        return $0.points > $1.points
+                    }
+                    return $0.goalDifference > $1.goalDifference
+                }
+                .prefix(5)
+        )
+        .map { "\($0.team.flag) \($0.team.name) - unbeaten" }
+    }
+    
+    private var highestScoringMatch: String {
+        guard let match = playedMatches.max(by: {
+            (($0.homeScore ?? 0) + ($0.awayScore ?? 0)) < (($1.homeScore ?? 0) + ($1.awayScore ?? 0))
+        }) else { return "-" }
+
+        let goals = (match.homeScore ?? 0) + (match.awayScore ?? 0)
+        return "\(match.homeTeam.flag) \(match.homeTeam.name) \(match.homeScore ?? 0)-\(match.awayScore ?? 0) \(match.awayTeam.flag) \(match.awayTeam.name) (\(goals) goals)"
+    }
+
+    private var biggestWin: String {
+        guard let match = playedMatches.max(by: {
+            abs(($0.homeScore ?? 0) - ($0.awayScore ?? 0)) < abs(($1.homeScore ?? 0) - ($1.awayScore ?? 0))
+        }) else { return "-" }
+
+        let margin = abs((match.homeScore ?? 0) - (match.awayScore ?? 0))
+        return "\(match.homeTeam.flag) \(match.homeTeam.name) \(match.homeScore ?? 0)-\(match.awayScore ?? 0) \(match.awayTeam.flag) \(match.awayTeam.name) (Margin \(margin))"
+    }
+
+    private var mostGoalsByOneTeam: String {
+        guard let match = playedMatches.max(by: {
+            max($0.homeScore ?? 0, $0.awayScore ?? 0) < max($1.homeScore ?? 0, $1.awayScore ?? 0)
+        }) else { return "-" }
+
+        let homeScore = match.homeScore ?? 0
+        let awayScore = match.awayScore ?? 0
+
+        if homeScore >= awayScore {
+            return "\(match.homeTeam.flag) \(match.homeTeam.name) - \(homeScore) goals"
+        } else {
+            return "\(match.awayTeam.flag) \(match.awayTeam.name) - \(awayScore) goals"
+        }
+    }
+
+    private var cleanSheetsLeader: String {
+        var cleanSheets: [String: (team: Team, count: Int)] = [:]
+
+        for match in playedMatches {
+            let homeScore = match.homeScore ?? 0
+            let awayScore = match.awayScore ?? 0
+
+            if awayScore == 0 {
+                cleanSheets[match.homeTeam.id, default: (match.homeTeam, 0)].count += 1
+            }
+
+            if homeScore == 0 {
+                cleanSheets[match.awayTeam.id, default: (match.awayTeam, 0)].count += 1
+            }
+        }
+
+        guard let best = cleanSheets.values.max(by: { $0.count < $1.count }) else {
+            return "-"
+        }
+
+        return "\(best.team.flag) \(best.team.name) - \(best.count)"
+    }
     
     private var savedKnockoutResults: SavedKnockoutData? {
         guard !savedKnockoutData.isEmpty else { return nil }
@@ -296,9 +546,47 @@ struct StatisticsView: View {
         return "\(thirdPlace.flag) \(thirdPlace.name)"
     }
     
+    private var homeWins: Int {
+        playedMatches.filter {
+            ($0.homeScore ?? 0) > ($0.awayScore ?? 0)
+        }.count
+    }
+
+    private var awayWins: Int {
+        playedMatches.filter {
+            ($0.awayScore ?? 0) > ($0.homeScore ?? 0)
+        }.count
+    }
+
+    private var drawMatches: Int {
+        playedMatches.filter {
+            ($0.homeScore ?? 0) == ($0.awayScore ?? 0)
+        }.count
+    }
+
+    private var lowScoringMatches: Int {
+        playedMatches.filter {
+            (($0.homeScore ?? 0) + ($0.awayScore ?? 0)) <= 1
+        }.count
+    }
+
+    private var mediumScoringMatches: Int {
+        playedMatches.filter {
+            let total = ($0.homeScore ?? 0) + ($0.awayScore ?? 0)
+            return total >= 2 && total <= 3
+        }.count
+    }
+
+    private var highScoringMatches: Int {
+        playedMatches.filter {
+            (($0.homeScore ?? 0) + ($0.awayScore ?? 0)) >= 4
+        }.count
+    }
+    
+    
     private func calculateStandings(for group: String) -> [Standing] {
         let groupTeams = teams.filter { $0.group == group }
-        let groupMatches = matches.filter { $0.group == group }
+        let groupMatches = effectiveMatches.filter { $0.group == group }
         
         var table = groupTeams.map { Standing(team: $0) }
         

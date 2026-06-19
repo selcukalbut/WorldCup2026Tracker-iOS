@@ -27,6 +27,7 @@
 				Models.swift,
 				MoreView.swift,
 				NotificationManager.swift,
+				QualificationTrackerView.swift,
 				RemoteMatchesView.swift,
 				SampleData.swift,
 				SplashView.swift,

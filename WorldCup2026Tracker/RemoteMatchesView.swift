@@ -571,6 +571,7 @@ struct RemoteMatchesView: View {
         name
             .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
             .lowercased()
+            .replacingOccurrences(of: "&", with: "and")
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: "-", with: "")
             .replacingOccurrences(of: ".", with: "")

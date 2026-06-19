@@ -11,6 +11,7 @@ struct MatchesView: View {
     @Binding var matches: [Match]
     let favoriteTeamID: String
 
+    @AppStorage("savedLocalMatches") private var savedLocalMatchesData: Data = Data()
     @State private var selectedFilter = "All"
 
     private var availableFilters: [String] {
@@ -35,12 +36,14 @@ struct MatchesView: View {
             }
         }
 
-        if selectedFilter == "⏳ Not Played" {
-            return matches.indices.filter {
-                matches[$0].homeScore == nil || matches[$0].awayScore == nil
+        if selectedFilter == "⌛ Not Played" {
+            let result = matches.indices.filter { index in
+                matches[index].homeScore == nil ||
+                matches[index].awayScore == nil
             }
+            return result
         }
-
+        
         let group = selectedFilter.replacingOccurrences(of: "Group ", with: "")
 
         return matches.indices.filter {
@@ -99,7 +102,12 @@ struct MatchesView: View {
 
                             Spacer()
 
-                            if binding.wrappedValue.homeScore != nil && binding.wrappedValue.awayScore != nil {
+                            if isLiveScoreMatch(binding.wrappedValue) {
+                                Text("🔴 LIVE")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.red)
+                            } else if binding.wrappedValue.homeScore != nil && binding.wrappedValue.awayScore != nil {
                                 Text("✅ Completed")
                                     .font(.caption)
                                     .fontWeight(.semibold)
@@ -110,7 +118,7 @@ struct MatchesView: View {
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.orange)
                             }
-
+                            
                             VStack(alignment: .trailing, spacing: 3) {
                                 Text(binding.wrappedValue.date)
                                     .font(.caption)
@@ -192,6 +200,55 @@ struct MatchesView: View {
             .listStyle(.plain)
         }
         .navigationTitle("Matches")
+        .onAppear {
+            loadSavedMatchesIfNeeded()
+        }
+        .onChange(of: matches) { _, _ in
+            saveMatchesToStorage()
+        }
+    }
+    
+    private func loadSavedMatchesIfNeeded() {
+        guard !savedLocalMatchesData.isEmpty,
+              let decoded = try? JSONDecoder().decode([Match].self, from: savedLocalMatchesData),
+              !decoded.isEmpty else {
+            return
+        }
+
+        let currentPlayedCount = matches.filter { $0.homeScore != nil && $0.awayScore != nil }.count
+        let savedPlayedCount = decoded.filter { $0.homeScore != nil && $0.awayScore != nil }.count
+
+        if savedPlayedCount > currentPlayedCount {
+            matches = decoded
+            print("MatchesView restored saved scores. Played matches: \(savedPlayedCount)")
+        }
+    }
+
+    private func saveMatchesToStorage() {
+        let playedCount = matches.filter { $0.homeScore != nil && $0.awayScore != nil }.count
+        guard playedCount > 0 else { return }
+
+        if let encoded = try? JSONEncoder().encode(matches) {
+            savedLocalMatchesData = encoded
+            print("MatchesView saved scores. Played matches: \(playedCount)")
+        }
+    }
+
+    private func isLiveScoreMatch(_ match: Match) -> Bool {
+        guard match.homeScore != nil,
+              match.awayScore != nil else {
+            return false
+        }
+
+        let currentLivePairs: [(String, String)] = [
+            ("Switzerland", "Bosnia and Herzegovina")
+        ]
+
+        return currentLivePairs.contains { pair in
+            let isSameOrder = match.homeTeam.name == pair.0 && match.awayTeam.name == pair.1
+            let isReverseOrder = match.homeTeam.name == pair.1 && match.awayTeam.name == pair.0
+            return isSameOrder || isReverseOrder
+        }
     }
     
     private func predictionPanel(for match: Match) -> some View {

@@ -10,8 +10,8 @@ final class APIService: ObservableObject {
     @Published var statusMessage: String = "API Infrastructure Ready"
     @Published var lastFetchedMatchCount: Int = 0
 
-    private let baseURL = "https://api.football-data.org/v4"
-    private let apiToken = "3a5a9eef4bde44a0b599535bd09fa889"
+    private let baseURL = "https://v3.football.api-sports.io"
+    private let apiKey = "3d19bb7a1646a257e475a6f8ec4aa35c"
 
     private init() {}
 
@@ -25,15 +25,19 @@ final class APIService: ObservableObject {
             lastUpdate = Date()
         }
 
-        guard let url = URL(string: "\(baseURL)/competitions/WC/matches") else {
+        guard let url = URL(string: "\(baseURL)/fixtures?league=1&season=2026") else {
             statusMessage = "Invalid API URL"
             return []
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue(apiToken, forHTTPHeaderField: "X-Auth-Token")
+        request.setValue(apiKey,
+                         forHTTPHeaderField: "x-apisports-key")
 
+        request.setValue("application/json",
+                         forHTTPHeaderField: "Accept")
+        
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -50,11 +54,17 @@ final class APIService: ObservableObject {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
 
-            let apiResponse = try decoder.decode(FootballDataMatchesResponse.self, from: data)
-            let remoteMatches = apiResponse.matches.map { $0.toRemoteMatch() }
+            let apiResponse = try decoder.decode(
+                APIFootballResponse.self,
+                from: data
+            )
+
+            let remoteMatches = apiResponse.response.map {
+                $0.toRemoteMatch()
+            }
 
             lastFetchedMatchCount = remoteMatches.count
-            statusMessage = "\(remoteMatches.count) match records loaded"
+            statusMessage = "\(remoteMatches.count) API-Football matches loaded"
 
             return remoteMatches
         } catch {
@@ -80,7 +90,7 @@ struct RemoteMatch: Codable, Identifiable {
 
     var statusBadge: String {
         switch statusText {
-        case "LIVE", "IN_PLAY":
+        case "1H", "2H", "HT", "LIVE":
             return "🟢 LIVE"
         case "PAUSED":
             return "🟠 PAUSED"
@@ -102,42 +112,57 @@ struct RemoteMatch: Codable, Identifiable {
     }
 }
 
-struct FootballDataMatchesResponse: Codable {
-    let matches: [FootballDataMatch]
+struct APIFootballResponse: Codable {
+    let response: [APIFixture]
 }
 
-struct FootballDataMatch: Codable {
-    let id: Int
-    let utcDate: Date?
-    let status: String?
-    let homeTeam: FootballDataTeamRef
-    let awayTeam: FootballDataTeamRef
-    let score: FootballDataScore?
+struct APIFixture: Codable {
+    let fixture: APIFixtureInfo
+    let teams: APITeams
+    let goals: APIGoals
 
     func toRemoteMatch() -> RemoteMatch {
         RemoteMatch(
-            id: id,
-            homeTeam: homeTeam.name ?? "Unknown Home Team",
-            awayTeam: awayTeam.name ?? "Unknown Away Team",
-            homeScore: score?.fullTime?.home,
-            awayScore: score?.fullTime?.away,
-            venue: nil,
-            city: nil,
-            matchDate: utcDate,
-            status: status
+            id: fixture.id,
+            homeTeam: teams.home.name,
+            awayTeam: teams.away.name,
+            homeScore: goals.home,
+            awayScore: goals.away,
+            venue: fixture.venue.name,
+            city: fixture.venue.city,
+            matchDate: fixture.date,
+            status: fixture.status.short
         )
     }
 }
 
-struct FootballDataTeamRef: Codable {
+struct APIFixtureInfo: Codable {
+    let id: Int
+    let date: Date
+    let venue: APIVenue
+    let status: APIStatus
+}
+
+struct APIVenue: Codable {
     let name: String?
+    let city: String?
 }
 
-struct FootballDataScore: Codable {
-    let fullTime: FootballDataScoreLine?
+struct APIStatus: Codable {
+    let short: String
 }
 
-struct FootballDataScoreLine: Codable {
+struct APITeams: Codable {
+    let home: APITeam
+    let away: APITeam
+}
+
+struct APITeam: Codable {
+    let name: String
+}
+
+struct APIGoals: Codable {
     let home: Int?
     let away: Int?
 }
+
