@@ -126,6 +126,18 @@ final class APIService: ObservableObject {
             statusMessage = "Standings API Error: \(error.localizedDescription)"
         }
     }
+
+    func standings(for group: String) -> [APIStanding] {
+        apiStandings
+            .filter { $0.group == group }
+            .sorted { $0.rank < $1.rank }
+    }
+
+    var thirdPlacedTeams: [APIStanding] {
+        apiStandings
+            .filter { $0.group == "Group Stage" }
+            .sorted { $0.rank < $1.rank }
+    }
 }
 
 struct RemoteMatch: Codable, Identifiable {

@@ -5,6 +5,8 @@ struct StandingsView: View {
     let matches: [Match]
     let favoriteTeamID: String
     
+    @StateObject private var apiService = APIService.shared
+    
     private var groups: [String] {
         Array(Set(teams.map { $0.group })).sorted()
     }
@@ -23,10 +25,13 @@ struct StandingsView: View {
             .padding(.vertical, 16)
         }
         .navigationTitle("Standings")
+        .task {
+            await apiService.fetchStandings()
+        }
     }
     
     private func groupStandingCard(group: String) -> some View {
-        let standings = calculateStandings(for: group)
+        let standings = apiStandingsForGroup(group)
         
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -166,6 +171,39 @@ struct StandingsView: View {
             return Color(red: 0.80, green: 0.50, blue: 0.25).opacity(0.25) // Bronze
         default:
             return Color.white.opacity(0.04)
+        }
+    }
+    
+    private func apiStandingsForGroup(_ group: String) -> [Standing] {
+        let apiGroupName = "Group \(group)"
+
+        let apiRows = apiService.standings(for: apiGroupName)
+
+        if apiRows.isEmpty {
+            return calculateStandings(for: group)
+        }
+
+        return apiRows.compactMap { row in
+            guard let team = teams.first(where: {
+                $0.name == row.team.name ||
+                ($0.name == "Korea Republic" && row.team.name == "South Korea") ||
+                ($0.name == "United States" && row.team.name == "USA") ||
+                ($0.name == "Bosnia and Herzegovina" && row.team.name == "Bosnia & Herzegovina") ||
+                ($0.name == "Cape Verde" && row.team.name == "Cape Verde Islands") ||
+                ($0.name == "DR Congo" && row.team.name == "Congo DR") ||
+                ($0.name == "Côte d'Ivoire" && row.team.name == "Ivory Coast")
+            }) else {
+                return nil
+            }
+
+            var standing = Standing(team: team)
+            standing.played = row.all.played
+            standing.won = row.all.win
+            standing.drawn = row.all.draw
+            standing.lost = row.all.lose
+            standing.goalsFor = row.all.goals.for
+            standing.goalsAgainst = row.all.goals.against
+            return standing
         }
     }
     
