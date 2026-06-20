@@ -108,6 +108,7 @@ struct RemoteMatchesView: View {
         .navigationTitle("Live Match Data")
         .task {
             await loadMatches()
+            await APIService.shared.fetchStandings()
             startAutoRefresh()
         }
         .onDisappear {
