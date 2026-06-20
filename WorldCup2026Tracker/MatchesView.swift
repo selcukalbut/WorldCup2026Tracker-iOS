@@ -235,20 +235,7 @@ struct MatchesView: View {
     }
 
     private func isLiveScoreMatch(_ match: Match) -> Bool {
-        guard match.homeScore != nil,
-              match.awayScore != nil else {
-            return false
-        }
-
-        let currentLivePairs: [(String, String)] = [
-            ("Switzerland", "Bosnia and Herzegovina")
-        ]
-
-        return currentLivePairs.contains { pair in
-            let isSameOrder = match.homeTeam.name == pair.0 && match.awayTeam.name == pair.1
-            let isReverseOrder = match.homeTeam.name == pair.1 && match.awayTeam.name == pair.0
-            return isSameOrder || isReverseOrder
-        }
+        return false
     }
     
     private func predictionPanel(for match: Match) -> some View {

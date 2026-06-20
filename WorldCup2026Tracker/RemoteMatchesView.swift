@@ -35,7 +35,7 @@ struct RemoteMatchesView: View {
             .filter {
                 let status = ($0.status ?? "").uppercased()
                 guard let matchDate = $0.matchDate else { return false }
-                return (status == "SCHEDULED" || status == "TIMED") && matchDate > now
+                return (status == "NS" || status == "TBD" || status == "SCHEDULED" || status == "TIMED") && matchDate > now
             }
             .sorted {
                 ($0.matchDate ?? Date.distantFuture) < ($1.matchDate ?? Date.distantFuture)
@@ -45,7 +45,10 @@ struct RemoteMatchesView: View {
 
     private func isActuallyLive(_ match: RemoteMatch) -> Bool {
         let status = (match.status ?? "").uppercased()
-        guard status == "LIVE" || status == "IN_PLAY" else { return false }
+
+        guard ["LIVE", "IN_PLAY", "1H", "2H", "ET", "BT", "P"].contains(status) else {
+            return false
+        }
 
         guard let matchDate = match.matchDate else {
             return true
@@ -53,11 +56,11 @@ struct RemoteMatchesView: View {
 
         let now = Date()
         let liveWindowStart = matchDate.addingTimeInterval(-15 * 60)
-        let liveWindowEnd = matchDate.addingTimeInterval(1 * 60 * 60)
+        let liveWindowEnd = matchDate.addingTimeInterval(2 * 60 * 60)
 
         return now >= liveWindowStart && now <= liveWindowEnd
     }
-
+    
     private var groupedMatches: [(date: Date, matches: [RemoteMatch])] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: filteredMatches) { match in
@@ -159,7 +162,11 @@ struct RemoteMatchesView: View {
                         .font(.largeTitle)
                         .fontWeight(.bold)
 
-                    Text("football-data.org live data")
+                    Text("API-Football live data")
+                        .foregroundStyle(.secondary)
+
+                    Text("Powered by API-Sports")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
@@ -179,12 +186,18 @@ struct RemoteMatchesView: View {
             HStack(spacing: 8) {
                 summaryCard("Total", value: "\(matches.count)", icon: "sportscourt.fill")
                 summaryCard("Filtered", value: "\(filteredMatches.count)", icon: "line.3.horizontal.decrease.circle")
-                summaryCard("Status", value: apiService.isLoading ? "Active" : "Ready", icon: "antenna.radiowaves.left.and.right")
+                summaryCard("Status", value: apiService.isLoading ? "Loading" : "Ready", icon: "antenna.radiowaves.left.and.right")
             }
 
             Text(apiService.statusMessage)
                 .font(.subheadline)
                 .foregroundStyle(apiService.isLoading ? .orange : .secondary)
+
+            if let lastUpdate = apiService.lastUpdate {
+                Text("Last update: \(lastUpdate.formatted(date: .abbreviated, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding()
         .background(.regularMaterial)
@@ -329,29 +342,38 @@ struct RemoteMatchesView: View {
     }
 
     private func statusBadge(for match: RemoteMatch) -> some View {
+        // print("BADGE STATUS = \(match.homeTeam) vs \(match.awayTeam) -> \(match.status ?? "nil")")
         let status = match.status ?? "UNKNOWN"
         let text: String
         let color: Color
         let icon: String
 
-        switch status {
-        case "LIVE", "IN_PLAY":
+        switch status.uppercased() {
+        case "1H", "2H", "LIVE", "IN_PLAY":
             text = "Live"
-            color = .green
+            color = .red
             icon = "livephoto"
-        case "SCHEDULED", "TIMED":
-            text = "Scheduled"
-            color = .blue
-            icon = "calendar"
-        case "FINISHED":
-            text = "Completed"
+
+        case "HT":
+            text = "Half Time"
+            color = .orange
+            icon = "pause.circle.fill"
+
+        case "FT", "AET", "PEN":
+            text = "Finished"
             color = .black
             icon = "checkmark.circle.fill"
+
+        case "NS", "TBD", "SCHEDULED", "TIMED":
+            text = "Upcoming"
+            color = .blue
+            icon = "calendar"
+
         case "PAUSED":
             text = "Half Time"
             color = .orange
             icon = "pause.circle.fill"
-        case "POSTPONED":
+        case "POSTPONED", "PST":
             text = "Postponed"
             color = .orange
             icon = "exclamationmark.triangle.fill"
